@@ -1,2 +1,26 @@
 version: 1
-tickets: []
+tickets:
+  - id: T-1-1
+    plan_id: P-1
+    status: todo
+    deps: []
+    detail_ref: T-1-1
+    claimed_by: null
+  - id: T-1-2
+    plan_id: P-1
+    status: todo
+    deps: [T-1-1]
+    detail_ref: T-1-2
+    claimed_by: null
+  - id: T-1-3
+    plan_id: P-1
+    status: todo
+    deps: [T-1-1, T-1-2]
+    detail_ref: T-1-3
+    claimed_by: null
+  - id: T-1-4
+    plan_id: P-1
+    status: todo
+    deps: [T-1-2, T-1-3]
+    detail_ref: T-1-4
+    claimed_by: null
