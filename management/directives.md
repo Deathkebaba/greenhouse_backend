@@ -4,7 +4,7 @@ This file is the canonical, repository-scoped source of product intent and execu
 All agents and collaborators must follow these directives unless an explicit exception is approved and recorded.
 
 ## Repository Configuration
-- BASE_BRANCH: master
+- BASE_BRANCH: main
 - Remote access: none — agents have no access to the remote repository; do not attempt push, pull, or fetch.
 
 ## Vision
