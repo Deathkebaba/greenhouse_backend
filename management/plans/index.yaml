@@ -8,9 +8,9 @@ plans:
     claimed_by: null
     closed_at: "2026-05-03T22:47:46Z"
   - id: P-2
-    status: in_progress
+    status: done
     depends_on_plans: []
     tickets: [T-2-1, T-2-2]
     detail_ref: P-2
     claimed_by: null
-    closed_at: null
+    closed_at: "2026-05-03T23:38:42Z"
