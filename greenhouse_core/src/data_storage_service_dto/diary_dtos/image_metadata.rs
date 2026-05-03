@@ -7,4 +7,6 @@ pub struct DiaryImageMetadataDto {
     pub media_type: String,
     pub byte_size: i64,
     pub uploaded_at: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub download_url: String,
 }
