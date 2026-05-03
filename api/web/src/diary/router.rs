@@ -1,10 +1,12 @@
 use crate::AppState;
 use crate::diary::service;
 use crate::helper::error::HttpResult;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::routing::{get, post, put};
 use axum::{Json, Router};
-use greenhouse_core::data_storage_service_dto::diary_dtos::get_diary::GetDiaryResponseDto;
+use greenhouse_core::data_storage_service_dto::diary_dtos::get_diary::{
+    GetDiaryEntriesQueryDto, GetDiaryResponseDto,
+};
 use greenhouse_core::data_storage_service_dto::diary_dtos::get_diary_entry::DiaryEntryResponseDto;
 use greenhouse_core::data_storage_service_dto::diary_dtos::post_diary_entry::PostDiaryEntryDtoRequest;
 use greenhouse_core::data_storage_service_dto::diary_dtos::put_diary_entry::PutDiaryEntryDtoRequest;
@@ -13,9 +15,9 @@ use uuid::Uuid;
 pub(crate) fn routes(state: AppState) -> Router {
     Router::new()
         .route("/", post(create_diary_entry))
+    .route("/", get(get_diary))
         .route("/{id}", put(update_diary_entry))
         .route("/{id}", get(get_diary_entry))
-        .route("/{start}/{end}", get(get_diary))
         .with_state(state)
 }
 
@@ -49,7 +51,7 @@ pub(crate) async fn get_diary_entry(
 #[axum::debug_handler]
 pub(crate) async fn get_diary(
     State(AppState { config }): State<AppState>,
-    Path((start, end)): Path<(String, String)>,
+    Query(query): Query<GetDiaryEntriesQueryDto>,
 ) -> HttpResult<GetDiaryResponseDto> {
-    Ok(service::get_diary(&config.service_addresses.data_storage_service, start, end).await?)
+    Ok(service::get_diary(&config.service_addresses.data_storage_service, &query).await?)
 }

@@ -2,7 +2,7 @@ version: 1
 tickets:
   - id: T-1-1
     plan_id: P-1
-    status: in_progress
+    status: review
     deps: []
     detail_ref: T-1-1
     claimed_by: implementer-agent

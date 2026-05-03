@@ -95,6 +95,7 @@ async fn generate_diary_entries(config: &Config) {
             title: format!("Diary Entry number {}", i),
             content: format!("Diary Entry {}", rng.gen_range(1..100)),
             date: (Utc::now() - Days::new(rng.gen_range(0..30))).to_string(),
+            tags: Vec::new(),
         };
         
         requests.push(entry);

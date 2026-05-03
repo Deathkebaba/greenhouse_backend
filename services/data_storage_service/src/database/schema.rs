@@ -32,4 +32,34 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(alert, diary_entry,);
+diesel::table! {
+    diary_entry_image (id) {
+        id -> Uuid,
+        diary_entry_id -> Uuid,
+        file_name -> Text,
+        media_type -> Text,
+        byte_size -> Int8,
+        storage_key -> Text,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    diary_entry_tag (id) {
+        id -> Uuid,
+        diary_entry_id -> Uuid,
+        tag -> Text,
+        normalized_tag -> Text,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::joinable!(diary_entry_image -> diary_entry (diary_entry_id));
+diesel::joinable!(diary_entry_tag -> diary_entry (diary_entry_id));
+
+diesel::allow_tables_to_appear_in_same_query!(
+    alert,
+    diary_entry,
+    diary_entry_image,
+    diary_entry_tag,
+);

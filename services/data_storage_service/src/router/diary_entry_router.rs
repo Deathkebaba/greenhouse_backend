@@ -1,14 +1,14 @@
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::{get, post, put},
 };
 use chrono::{DateTime, Utc};
 use greenhouse_core::data_storage_service_dto::diary_dtos::{
-    get_diary::GetDiaryResponseDto, get_diary_entry::DiaryEntryResponseDto,
-    post_diary_entry::PostDiaryEntryDtoRequest, put_diary_entry::PutDiaryEntryDtoRequest,
+    get_diary::GetDiaryEntriesQueryDto, get_diary::GetDiaryResponseDto,
+    get_diary_entry::DiaryEntryResponseDto, post_diary_entry::PostDiaryEntryDtoRequest,
+    put_diary_entry::PutDiaryEntryDtoRequest,
 };
-use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
@@ -17,18 +17,12 @@ use crate::{
     router::error::{Error, HttpResult},
 };
 
-#[derive(Deserialize)]
-pub(crate) struct Params {
-    start: String,
-    end: String,
-}
-
 pub(crate) fn routes(state: AppState) -> Router {
     Router::new()
         .route("/", post(create_diary_entry))
+        .route("/", get(get_diary))
         .route("/{id}", put(update_diary_entry))
         .route("/{id}", get(get_diary_entry))
-        .route("/{start}/{end}", get(get_diary))
         .with_state(state)
 }
 
@@ -92,12 +86,12 @@ pub(crate) async fn get_diary_entry(
 #[axum::debug_handler]
 pub(crate) async fn get_diary(
     State(AppState { config: _, pool }): State<AppState>,
-    Path(Params { start, end }): Path<Params>,
+    Query(query): Query<GetDiaryEntriesQueryDto>,
 ) -> HttpResult<GetDiaryResponseDto> {
-    let start = start.parse::<DateTime<Utc>>().map_err(|e| {
+    let start = query.start.parse::<DateTime<Utc>>().map_err(|e| {
         sentry::configure_scope(|scope| {
             let mut map = std::collections::BTreeMap::new();
-            map.insert(String::from("time"), start.clone().into());
+            map.insert(String::from("time"), query.start.clone().into());
 
             scope.set_context("time_string", sentry::protocol::Context::Other(map));
         });
@@ -105,10 +99,10 @@ pub(crate) async fn get_diary(
         sentry::capture_error(&e);
         Error::TimeError
     })?;
-    let end = end.parse::<DateTime<Utc>>().map_err(|e| {
+    let end = query.end.parse::<DateTime<Utc>>().map_err(|e| {
         sentry::configure_scope(|scope| {
             let mut map = std::collections::BTreeMap::new();
-            map.insert(String::from("time"), end.clone().into());
+            map.insert(String::from("time"), query.end.clone().into());
 
             scope.set_context("time_string", sentry::protocol::Context::Other(map));
         });
