@@ -5,6 +5,7 @@ use super::{
 use crate::Pool;
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
+use diesel::dsl::count_distinct;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use greenhouse_core::data_storage_service_dto::diary_dtos::{
     get_diary_entry::DiaryEntryResponseDto, image_metadata::DiaryImageMetadataDto,
@@ -135,12 +136,8 @@ impl DiaryEntry {
             sentry::capture_error(&e);
             Error::DatabaseConnection
         })?;
-        let records = diary_entry::table
-            .filter(
-                diary_entry::entry_date
-                    .ge(start)
-                    .and(diary_entry::entry_date.le(end)),
-            )
+        let normalized_filters = normalize_requested_filters(tags);
+        let records = build_date_range_query(start, end, &normalized_filters, tag_filter_mode)
             .order((diary_entry::entry_date.asc(), diary_entry::id.asc()))
             .load(&mut conn)
             .await
@@ -149,13 +146,7 @@ impl DiaryEntry {
                 Error::Find
             })?;
 
-        let mut entries = load_entries_with_related(records, &mut conn).await?;
-        let normalized_filters = normalize_requested_filters(tags);
-        if !normalized_filters.is_empty() {
-            entries.retain(|entry| entry_matches_tag_filter(entry, &normalized_filters, tag_filter_mode));
-        }
-
-        Ok(entries)
+        load_entries_with_related(records, &mut conn).await
     }
 
     pub(crate) async fn flush(&mut self, pool: &Pool) -> Result<()> {
@@ -419,24 +410,40 @@ fn normalize_requested_filters(tags: &[String]) -> Vec<String> {
         .collect()
 }
 
-fn entry_matches_tag_filter(
-    entry: &DiaryEntry,
-    requested_filters: &[String],
+fn build_date_range_query<'a>(
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+    normalized_filters: &'a [String],
     tag_filter_mode: DiaryTagFilterModeDto,
-) -> bool {
-    let entry_tags: HashSet<String> = normalize_tags(&entry.tags)
-        .into_iter()
-        .map(|tag| tag.normalized)
-        .collect();
+) -> diary_entry::BoxedQuery<'a, diesel::pg::Pg> {
+    let mut query = diary_entry::table
+        .filter(
+            diary_entry::entry_date
+                .ge(start)
+                .and(diary_entry::entry_date.le(end)),
+        )
+        .into_boxed();
 
-    match tag_filter_mode {
-        DiaryTagFilterModeDto::Any => requested_filters
-            .iter()
-            .any(|tag| entry_tags.contains(tag)),
-        DiaryTagFilterModeDto::All => requested_filters
-            .iter()
-            .all(|tag| entry_tags.contains(tag)),
+    if normalized_filters.is_empty() {
+        return query;
     }
+
+    query = match tag_filter_mode {
+        DiaryTagFilterModeDto::Any => query.filter(diary_entry::id.eq_any(
+            diary_entry_tag::table
+                .select(diary_entry_tag::diary_entry_id)
+                .filter(diary_entry_tag::normalized_tag.eq_any(normalized_filters)),
+        )),
+        DiaryTagFilterModeDto::All => query.filter(diary_entry::id.eq_any(
+            diary_entry_tag::table
+                .filter(diary_entry_tag::normalized_tag.eq_any(normalized_filters))
+                .group_by(diary_entry_tag::diary_entry_id)
+                .having(count_distinct(diary_entry_tag::normalized_tag).eq(normalized_filters.len() as i64))
+                .select(diary_entry_tag::diary_entry_id),
+        )),
+    };
+
+    query
 }
 
 async fn load_entries_with_related(
@@ -670,32 +677,64 @@ mod tests {
 
     #[test]
     fn filters_tags_case_insensitively_for_any_and_all_modes() {
-        let entry = DiaryEntry {
-            id: Uuid::new_v4(),
-            entry_date: chrono::Utc::now(),
-            title: String::from("Tomatoes"),
-            content: String::from("Harvested"),
-            tags: vec![String::from("Harvest"), String::from("Tomatoes")],
-            created_at: chrono::Utc::now(),
-            updated_at: chrono::Utc::now(),
-            images: Vec::new(),
-        };
+        assert_eq!(
+            normalize_requested_filters(&[
+                String::from(" harvest "),
+                String::from("HARVEST"),
+                String::from(" Tomatoes "),
+                String::from(""),
+            ]),
+            vec![String::from("harvest"), String::from("tomatoes")]
+        );
+    }
 
-        assert!(entry_matches_tag_filter(
-            &entry,
-            &[String::from("harvest")],
+    #[test]
+    fn date_range_query_pushes_any_tag_filter_into_sql() {
+        let filters = normalize_requested_filters(&[
+            String::from(" tomatoes "),
+            String::from("HARVEST"),
+        ]);
+        let query = build_date_range_query(
+            chrono::Utc::now(),
+            chrono::Utc::now(),
+            &filters,
             DiaryTagFilterModeDto::Any,
-        ));
-        assert!(entry_matches_tag_filter(
-            &entry,
-            &[String::from("harvest"), String::from("tomatoes")],
+        )
+        .order((diary_entry::entry_date.asc(), diary_entry::id.asc()));
+
+        let sql = debug_query::<diesel::pg::Pg, _>(&query)
+            .to_string()
+            .to_lowercase();
+
+        assert!(sql.contains("from \"diary_entry\""));
+        assert!(sql.contains("select \"diary_entry_tag\".\"diary_entry_id\" from \"diary_entry_tag\""));
+        assert!(sql.contains("\"diary_entry_tag\".\"normalized_tag\" = any($"));
+        assert!(!sql.contains("count(distinct"));
+    }
+
+    #[test]
+    fn date_range_query_pushes_all_tag_filter_into_sql() {
+        let filters = normalize_requested_filters(&[
+            String::from(" tomatoes "),
+            String::from("HARVEST"),
+            String::from("harvest"),
+        ]);
+        let query = build_date_range_query(
+            chrono::Utc::now(),
+            chrono::Utc::now(),
+            &filters,
             DiaryTagFilterModeDto::All,
-        ));
-        assert!(!entry_matches_tag_filter(
-            &entry,
-            &[String::from("harvest"), String::from("missing")],
-            DiaryTagFilterModeDto::All,
-        ));
+        )
+        .order((diary_entry::entry_date.asc(), diary_entry::id.asc()));
+
+        let sql = debug_query::<diesel::pg::Pg, _>(&query)
+            .to_string()
+            .to_lowercase();
+
+        assert!(sql.contains("from \"diary_entry\""));
+        assert!(sql.contains("group by \"diary_entry_tag\".\"diary_entry_id\""));
+        assert!(sql.contains("count(distinct \"diary_entry_tag\".\"normalized_tag\") = $"));
+        assert!(sql.contains("\"diary_entry_tag\".\"normalized_tag\" = any($"));
     }
 
     #[test]
