@@ -7,8 +7,8 @@ use greenhouse_core::data_storage_service_dto::diary_dtos::put_diary_entry::PutD
 use greenhouse_core::data_storage_service_dto::diary_dtos::query::DiaryTagFilterModeDto;
 use once_cell::sync::Lazy;
 use reqwest::header::{CONTENT_TYPE, COOKIE};
-use tokio::sync::Mutex;
 use test_helper::TestContext;
+use tokio::sync::Mutex;
 
 mod test_helper;
 
@@ -55,8 +55,14 @@ async fn test_create_update_and_manage_diary_images_with_tags() {
     .await;
 
     assert_eq!(created_entry.content, post_entry.content);
-    assert_eq!(sorted_strings(created_entry.tags.clone()), sorted_strings(vec![String::from("Tomatoes"), String::from("Harvest")]));
-    assert!(created_entry.images.is_empty(), "expected no images on a new entry");
+    assert_eq!(
+        sorted_strings(created_entry.tags.clone()),
+        sorted_strings(vec![String::from("Tomatoes"), String::from("Harvest")])
+    );
+    assert!(
+        created_entry.images.is_empty(),
+        "expected no images on a new entry"
+    );
 
     let image_bytes = vec![0_u8, 1, 2, 3, 4, 5, 6, 7];
     let upload_response = authenticated(
@@ -131,16 +137,19 @@ async fn test_create_update_and_manage_diary_images_with_tags() {
         "Failed to download diary image"
     );
     assert_eq!(
-        download_response
-            .headers()
-            .get(CONTENT_TYPE)
-            .unwrap(),
+        download_response.headers().get(CONTENT_TYPE).unwrap(),
         "image/png"
     );
-    assert_eq!(download_response.bytes().await.unwrap().as_ref(), image_bytes.as_slice());
+    assert_eq!(
+        download_response.bytes().await.unwrap().as_ref(),
+        image_bytes.as_slice()
+    );
 
     let delete_response = authenticated(
-        client.delete(format!("{API_BASE_URL}/{}/images/{}", created_entry.id, image_id)),
+        client.delete(format!(
+            "{API_BASE_URL}/{}/images/{}",
+            created_entry.id, image_id
+        )),
         &token,
     )
     .send()
@@ -161,7 +170,10 @@ async fn test_create_update_and_manage_diary_images_with_tags() {
     .send()
     .await
     .unwrap();
-    assert_eq!(download_after_delete.status(), reqwest::StatusCode::NOT_FOUND);
+    assert_eq!(
+        download_after_delete.status(),
+        reqwest::StatusCode::NOT_FOUND
+    );
 
     context.stop().await;
 }
@@ -219,7 +231,11 @@ async fn test_filters_diary_entries_by_any_and_all_tags() {
         },
     )
     .await;
-    assert_eq!(any_match.entries.len(), 3, "any-tag query should match all relevant entries");
+    assert_eq!(
+        any_match.entries.len(),
+        3,
+        "any-tag query should match all relevant entries"
+    );
 
     let all_match = get_diary(
         &client,
@@ -232,7 +248,11 @@ async fn test_filters_diary_entries_by_any_and_all_tags() {
         },
     )
     .await;
-    assert_eq!(all_match.entries.len(), 1, "all-tags query should only match entries containing both tags");
+    assert_eq!(
+        all_match.entries.len(),
+        1,
+        "all-tags query should only match entries containing both tags"
+    );
     assert_eq!(all_match.entries[0].title, "Tomatoes and harvest");
     assert_eq!(
         sorted_strings(all_match.entries[0].tags.clone()),
@@ -242,10 +262,7 @@ async fn test_filters_diary_entries_by_any_and_all_tags() {
     context.stop().await;
 }
 
-fn authenticated(
-    request: reqwest::RequestBuilder,
-    token: &str,
-) -> reqwest::RequestBuilder {
+fn authenticated(request: reqwest::RequestBuilder, token: &str) -> reqwest::RequestBuilder {
     request
         .header("Access-Control-Allow-Credentials", "true")
         .header(COOKIE, format!("auth-token={token}"))
@@ -263,7 +280,10 @@ async fn create_entry(client: &reqwest::Client, token: &str, entry: PostDiaryEnt
         .await
         .unwrap();
 
-    assert!(response.status().is_success(), "Failed to create diary entry");
+    assert!(
+        response.status().is_success(),
+        "Failed to create diary entry"
+    );
 }
 
 async fn get_diary(
@@ -277,7 +297,10 @@ async fn get_diary(
         .await
         .unwrap();
 
-    assert!(response.status().is_success(), "Failed to query diary entries");
+    assert!(
+        response.status().is_success(),
+        "Failed to query diary entries"
+    );
     response.json::<GetDiaryResponseDto>().await.unwrap()
 }
 
@@ -287,7 +310,10 @@ async fn get_entry(client: &reqwest::Client, token: &str, entry_id: &str) -> Dia
         .await
         .unwrap();
 
-    assert!(response.status().is_success(), "Failed to get diary entry by id");
+    assert!(
+        response.status().is_success(),
+        "Failed to get diary entry by id"
+    );
     response.json::<DiaryEntryResponseDto>().await.unwrap()
 }
 
