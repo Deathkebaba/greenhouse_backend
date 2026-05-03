@@ -8,7 +8,7 @@ tickets:
     claimed_by: null
   - id: T-1-2
     plan_id: P-1
-    status: in_progress
+    status: review
     deps: [T-1-1]
     detail_ref: T-1-2
     claimed_by: implementer-agent

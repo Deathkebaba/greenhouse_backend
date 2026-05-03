@@ -40,6 +40,7 @@ diesel::table! {
         media_type -> Text,
         byte_size -> Int8,
         storage_key -> Text,
+        image_data -> Bytea,
         created_at -> Timestamptz,
     }
 }
