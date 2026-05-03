@@ -337,6 +337,7 @@ impl DiaryEntryImageRecord {
             media_type: self.media_type.clone(),
             byte_size: self.byte_size,
             uploaded_at: self.created_at.format("%Y-%m-%dT%H:%M:%S%.fZ").to_string(),
+            download_url: String::new(),
         }
     }
 }
@@ -349,6 +350,7 @@ impl DiaryEntryImageMetadataRecord {
             media_type: self.media_type.clone(),
             byte_size: self.byte_size,
             uploaded_at: self.created_at.format("%Y-%m-%dT%H:%M:%S%.fZ").to_string(),
+            download_url: String::new(),
         }
     }
 }
@@ -642,6 +644,7 @@ mod tests {
                 media_type: String::from("image/png"),
                 byte_size: 4,
                 uploaded_at: created_at.format("%Y-%m-%dT%H:%M:%S%.fZ").to_string(),
+                download_url: String::new(),
             }],
         };
 

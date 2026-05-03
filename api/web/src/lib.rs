@@ -1,5 +1,6 @@
 use auth::middleware::check_token;
 use axum::extract::FromRef;
+use axum::http::HeaderName;
 use axum::routing::get;
 use axum::{Router, middleware};
 use reqwest::{
@@ -52,7 +53,12 @@ pub fn app(config: Config) -> Router {
     let state = AppState { config };
 
     let cors = CorsLayer::new()
-        .allow_headers([AUTHORIZATION, ACCEPT, reqwest::header::CONTENT_TYPE])
+        .allow_headers([
+            AUTHORIZATION,
+            ACCEPT,
+            reqwest::header::CONTENT_TYPE,
+            HeaderName::from_static(diary::service::FILE_NAME_HEADER),
+        ])
         .allow_credentials(true)
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
         .allow_origin([
