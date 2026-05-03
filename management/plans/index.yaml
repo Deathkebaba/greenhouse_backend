@@ -1,9 +1,2 @@
 version: 1
-plans:
-  - id: P-1
-    status: todo
-    depends_on_plans: []
-    tickets: [T-1-1, T-1-2, T-1-3, T-1-4]
-    detail_ref: P-1
-    claimed_by: null
-    closed_at: null
+plans: []
