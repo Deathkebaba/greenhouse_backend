@@ -32,7 +32,7 @@ tickets:
     claimed_by: manager-agent
   - id: T-2-2
     plan_id: P-2
-    status: in_progress
+    status: done
     deps: []
     detail_ref: T-2-2
-    claimed_by: manager-agent
+    claimed_by: null
