@@ -37,3 +37,4 @@ scripting_service_dto = []
 
 [dev-dependencies]
 httpc-test = "0.1.9"
+serde_urlencoded = "0.7.1"

@@ -120,6 +120,8 @@ impl From<DiaryEntry> for DiaryEntryResponseDto {
             date: val.entry_date.format("%Y-%m-%dT%H:%M:%S%.fZ").to_string(),
             title: val.title,
             content: val.content,
+            tags: Vec::new(),
+            images: Vec::new(),
             created_at: val.created_at.format("%Y-%m-%dT%H:%M:%S%.fZ").to_string(),
             updated_at: val.updated_at.format("%Y-%m-%dT%H:%M:%S%.fZ").to_string(),
         }
@@ -190,6 +192,8 @@ mod tests {
         );
         assert_eq!(response.title, title);
         assert_eq!(response.content, content);
+        assert!(response.tags.is_empty());
+        assert!(response.images.is_empty());
         assert_eq!(
             response.created_at,
             created_at.format("%Y-%m-%dT%H:%M:%S%.fZ").to_string()

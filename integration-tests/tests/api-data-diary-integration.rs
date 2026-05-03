@@ -16,6 +16,7 @@ async fn test_create_and_get_diary_entry() {
         title: "Test Entry".to_string(),
         content: "This is a test diary entry.".to_string(),
         date: chrono::Utc::now().to_string(),
+        tags: Vec::new(),
     };
     let response = client
         .post("http://localhost:3000/api/diary")
@@ -79,6 +80,7 @@ async fn test_update_diary_entry() {
         title: "Entry to Update".to_string(),
         content: "Original content.".to_string(),
         date: chrono::Utc::now().to_string(),
+        tags: Vec::new(),
     };
     let response = client
         .post("http://localhost:3000/api/diary")
@@ -111,6 +113,7 @@ async fn test_update_diary_entry() {
         title: String::from("Updated Title"),
         content: String::from("Updated content."),
         date: chrono::Utc::now().to_string(),
+        tags: Vec::new(),
     };
     let response = client
         .put(format!(

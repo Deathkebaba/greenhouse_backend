@@ -1,1 +1,10 @@
 pub const DIARY: &str = "/diary";
+pub const TAGS: &str = "/tags";
+pub const ENTRY_IMAGES: &str = "/{entry_id}/images";
+pub const IMAGE_UPLOAD: &str = ENTRY_IMAGES;
+pub const IMAGE_DOWNLOAD: &str = "/{entry_id}/images/{image_id}";
+pub const IMAGE_DELETE: &str = "/{entry_id}/images/{image_id}";
+pub const START_QUERY_PARAM: &str = "start";
+pub const END_QUERY_PARAM: &str = "end";
+pub const TAGS_QUERY_PARAM: &str = "tags";
+pub const TAG_FILTER_MODE_QUERY_PARAM: &str = "tag_filter_mode";

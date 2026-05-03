@@ -1,7 +1,8 @@
 use greenhouse_core::{
     data_storage_service_dto::diary_dtos::{
-        endpoints, get_diary::GetDiaryResponseDto, get_diary_entry::DiaryEntryResponseDto,
-        post_diary_entry::PostDiaryEntryDtoRequest, put_diary_entry::PutDiaryEntryDtoRequest,
+        endpoints, get_diary::GetDiaryEntriesQueryDto, get_diary::GetDiaryResponseDto,
+        get_diary_entry::DiaryEntryResponseDto, post_diary_entry::PostDiaryEntryDtoRequest,
+        put_diary_entry::PutDiaryEntryDtoRequest,
     },
     http_error::ErrorResponseBody,
 };
@@ -129,21 +130,20 @@ pub(crate) async fn get_diary_entry(base_ulr: &str, id: Uuid) -> Result<DiaryEnt
 
 pub(crate) async fn get_diary(
     base_ulr: &str,
-    start: String,
-    end: String,
+    query: &GetDiaryEntriesQueryDto,
 ) -> Result<GetDiaryResponseDto> {
     let resp = reqwest::Client::new()
-        .get(base_ulr.to_string() + endpoints::DIARY + "/" + &start + "/" + &end)
+        .get(base_ulr.to_string() + endpoints::DIARY)
+        .query(query)
         .send()
         .await
         .map_err(|e| {
             sentry::capture_error(&e);
 
             tracing::error!(
-                "Error in get to service: {:?} with start: {:?} and end: {:?} for url {}",
+                "Error in get to service: {:?} with query: {:?} for url {}",
                 e,
-                start,
-                end,
+                query,
                 base_ulr
             );
 
