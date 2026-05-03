@@ -1,2 +1,12 @@
 [build]
-rustflags = ["-C","relocation-model=pic"]
+rustflags = [
+	"-C",
+	"relocation-model=pic",
+	"-Lnative=C:/Users/death/vcpkg/installed/x64-windows/debug/lib",
+	"-Lnative=C:/Users/death/vcpkg/installed/x64-windows/lib",
+]
+
+[env]
+PQ_LIB_DIR = "C:/Users/death/vcpkg/installed/x64-windows/lib"
+VCPKG_ROOT = "C:/Users/death/vcpkg"
+VCPKGRS_DYNAMIC = "1"
