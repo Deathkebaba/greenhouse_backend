@@ -26,13 +26,13 @@ tickets:
     claimed_by: null
   - id: T-2-1
     plan_id: P-2
-    status: todo
+    status: in_progress
     deps: []
     detail_ref: T-2-1
-    claimed_by: null
+    claimed_by: manager-agent
   - id: T-2-2
     plan_id: P-2
-    status: todo
+    status: in_progress
     deps: []
     detail_ref: T-2-2
-    claimed_by: null
+    claimed_by: manager-agent
