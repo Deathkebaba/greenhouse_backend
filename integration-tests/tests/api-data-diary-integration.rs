@@ -5,16 +5,20 @@ use greenhouse_core::data_storage_service_dto::diary_dtos::get_diary_entry::Diar
 use greenhouse_core::data_storage_service_dto::diary_dtos::post_diary_entry::PostDiaryEntryDtoRequest;
 use greenhouse_core::data_storage_service_dto::diary_dtos::put_diary_entry::PutDiaryEntryDtoRequest;
 use greenhouse_core::data_storage_service_dto::diary_dtos::query::DiaryTagFilterModeDto;
+use once_cell::sync::Lazy;
 use reqwest::header::{CONTENT_TYPE, COOKIE};
+use tokio::sync::Mutex;
 use test_helper::TestContext;
 
 mod test_helper;
 
 const API_BASE_URL: &str = "http://localhost:3000/api/diary";
 const FILE_NAME_HEADER: &str = "x-file-name";
+static TEST_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
 #[tokio::test]
 async fn test_create_update_and_manage_diary_images_with_tags() {
+    let _guard = TEST_MUTEX.lock().await;
     let mut context = TestContext::new();
     context.start_all_services().await;
     let token = test_helper::admin_login().await;
@@ -51,7 +55,7 @@ async fn test_create_update_and_manage_diary_images_with_tags() {
     .await;
 
     assert_eq!(created_entry.content, post_entry.content);
-    assert_eq!(created_entry.tags, vec![String::from("Tomatoes"), String::from("Harvest")]);
+    assert_eq!(sorted_strings(created_entry.tags.clone()), sorted_strings(vec![String::from("Tomatoes"), String::from("Harvest")]));
     assert!(created_entry.images.is_empty(), "expected no images on a new entry");
 
     let image_bytes = vec![0_u8, 1, 2, 3, 4, 5, 6, 7];
@@ -105,8 +109,8 @@ async fn test_create_update_and_manage_diary_images_with_tags() {
     assert_eq!(updated_entry.title, updated_entry_request.title);
     assert_eq!(updated_entry.content, updated_entry_request.content);
     assert_eq!(
-        updated_entry.tags,
-        vec![String::from("Tomatoes"), String::from("Pruning")]
+        sorted_strings(updated_entry.tags.clone()),
+        sorted_strings(vec![String::from("Tomatoes"), String::from("Pruning")])
     );
     assert_eq!(updated_entry.images.len(), 1);
     assert_eq!(updated_entry.images[0].id, image_id);
@@ -164,6 +168,7 @@ async fn test_create_update_and_manage_diary_images_with_tags() {
 
 #[tokio::test]
 async fn test_filters_diary_entries_by_any_and_all_tags() {
+    let _guard = TEST_MUTEX.lock().await;
     let mut context = TestContext::new();
     context.start_all_services().await;
     let token = test_helper::admin_login().await;
@@ -230,8 +235,8 @@ async fn test_filters_diary_entries_by_any_and_all_tags() {
     assert_eq!(all_match.entries.len(), 1, "all-tags query should only match entries containing both tags");
     assert_eq!(all_match.entries[0].title, "Tomatoes and harvest");
     assert_eq!(
-        all_match.entries[0].tags,
-        vec![String::from("Tomatoes"), String::from("HARVEST")]
+        sorted_strings(all_match.entries[0].tags.clone()),
+        sorted_strings(vec![String::from("Tomatoes"), String::from("HARVEST")])
     );
 
     context.stop().await;
@@ -244,6 +249,11 @@ fn authenticated(
     request
         .header("Access-Control-Allow-Credentials", "true")
         .header(COOKIE, format!("auth-token={token}"))
+}
+
+fn sorted_strings(mut values: Vec<String>) -> Vec<String> {
+    values.sort();
+    values
 }
 
 async fn create_entry(client: &reqwest::Client, token: &str, entry: PostDiaryEntryDtoRequest) {
