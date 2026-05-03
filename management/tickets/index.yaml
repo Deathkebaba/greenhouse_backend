@@ -8,16 +8,16 @@ tickets:
     claimed_by: null
   - id: T-1-2
     plan_id: P-1
-    status: review
+    status: done
     deps: [T-1-1]
     detail_ref: T-1-2
-    claimed_by: implementer-agent
+    claimed_by: null
   - id: T-1-3
     plan_id: P-1
-    status: todo
+    status: in_progress
     deps: [T-1-1, T-1-2]
     detail_ref: T-1-3
-    claimed_by: null
+    claimed_by: implementer-agent
   - id: T-1-4
     plan_id: P-1
     status: todo
