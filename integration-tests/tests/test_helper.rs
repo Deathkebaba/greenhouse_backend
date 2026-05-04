@@ -4,8 +4,9 @@ use testcontainers::{ContainerAsync, ImageExt};
 use testcontainers_modules::postgres::{self, Postgres};
 use testcontainers_modules::testcontainers::runners::AsyncRunner;
 use tokio::task::JoinHandle;
-
+#[allow(dead_code)]
 pub const TEST_USERNAME: &str = "testuser";
+#[allow(dead_code)]
 pub const TEST_PASSWORD: &str = "testpassword";
 pub const AUTH_SECRET: &str = "testpassword";
 
@@ -327,13 +328,13 @@ async fn start_scripting_api() -> tokio::task::JoinHandle<Result<(), std::io::Er
     let listener = tokio::net::TcpListener::bind(url).await.unwrap();
     tokio::spawn(async move { axum::serve(listener, api_app).await })
 }
-
+#[allow(dead_code)]
 pub async fn admin_login() -> String {
     register_admin().await;
 
     api_login().await
 }
-
+#[allow(dead_code)]
 pub async fn register_admin() {
     let client = reqwest::Client::new();
     let response = client
@@ -348,7 +349,7 @@ pub async fn register_admin() {
 
     assert!(response.status().is_success(), "Failed to register admin");
 }
-
+#[allow(dead_code)]
 pub async fn api_login() -> String {
     let client = reqwest::Client::new();
     let response = client
