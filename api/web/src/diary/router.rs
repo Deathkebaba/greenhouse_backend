@@ -89,17 +89,19 @@ pub(crate) async fn download_diary_image(
     State(AppState { config }): State<AppState>,
     Path((entry_id, image_id)): Path<(Uuid, Uuid)>,
 ) -> HttpResult<impl IntoResponse> {
-    let response =
-        service::download_diary_image(&config.service_addresses.data_storage_service, entry_id, image_id)
-            .await?;
+    let response = service::download_diary_image(
+        &config.service_addresses.data_storage_service,
+        entry_id,
+        image_id,
+    )
+    .await?;
 
     Ok((
         StatusCode::OK,
         [(
             header::CONTENT_TYPE,
-            HeaderValue::from_str(&response.media_type).unwrap_or_else(|_| {
-                HeaderValue::from_static("application/octet-stream")
-            }),
+            HeaderValue::from_str(&response.media_type)
+                .unwrap_or_else(|_| HeaderValue::from_static("application/octet-stream")),
         )],
         response.bytes,
     ))
@@ -110,7 +112,11 @@ pub(crate) async fn delete_diary_image(
     State(AppState { config }): State<AppState>,
     Path((entry_id, image_id)): Path<(Uuid, Uuid)>,
 ) -> HttpResult<StatusCode> {
-    service::delete_diary_image(&config.service_addresses.data_storage_service, entry_id, image_id)
-        .await?;
+    service::delete_diary_image(
+        &config.service_addresses.data_storage_service,
+        entry_id,
+        image_id,
+    )
+    .await?;
     Ok(StatusCode::NO_CONTENT)
 }

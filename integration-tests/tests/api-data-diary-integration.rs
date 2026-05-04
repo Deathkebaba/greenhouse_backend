@@ -1,14 +1,14 @@
 use greenhouse_core::data_storage_service_dto::diary_dtos::get_diary::{
     GetDiaryEntriesQueryDto, GetDiaryResponseDto,
 };
-use greenhouse_core::data_storage_service_dto::diary_dtos::image_metadata::DiaryImageMetadataDto;
 use greenhouse_core::data_storage_service_dto::diary_dtos::get_diary_entry::DiaryEntryResponseDto;
+use greenhouse_core::data_storage_service_dto::diary_dtos::image_metadata::DiaryImageMetadataDto;
 use greenhouse_core::data_storage_service_dto::diary_dtos::post_diary_entry::PostDiaryEntryDtoRequest;
 use greenhouse_core::data_storage_service_dto::diary_dtos::put_diary_entry::PutDiaryEntryDtoRequest;
 use greenhouse_core::data_storage_service_dto::diary_dtos::query::DiaryTagFilterModeDto;
 use once_cell::sync::Lazy;
-use reqwest::header::{CONTENT_TYPE, COOKIE};
 use reqwest::StatusCode;
+use reqwest::header::{CONTENT_TYPE, COOKIE};
 use test_helper::TestContext;
 use tokio::sync::Mutex;
 
@@ -464,15 +464,21 @@ async fn upload_image(
     media_type: &str,
     body: Vec<u8>,
 ) -> DiaryImageMetadataDto {
-    let response = authenticated(client.post(format!("{API_BASE_URL}/{entry_id}/images")), token)
-        .header(FILE_NAME_HEADER, file_name)
-        .header(CONTENT_TYPE, media_type)
-        .body(body.clone())
-        .send()
-        .await
-        .unwrap();
+    let response = authenticated(
+        client.post(format!("{API_BASE_URL}/{entry_id}/images")),
+        token,
+    )
+    .header(FILE_NAME_HEADER, file_name)
+    .header(CONTENT_TYPE, media_type)
+    .body(body.clone())
+    .send()
+    .await
+    .unwrap();
 
-    assert!(response.status().is_success(), "Failed to upload diary image");
+    assert!(
+        response.status().is_success(),
+        "Failed to upload diary image"
+    );
 
     let metadata = response.json::<DiaryImageMetadataDto>().await.unwrap();
     assert_eq!(metadata.file_name, file_name);
@@ -493,11 +499,17 @@ async fn assert_download_matches(
     expected_media_type: &str,
     expected_body: &[u8],
 ) {
-    let response = authenticated(client.get(format!("http://localhost:3000{download_url}")), token)
-        .send()
-        .await
-        .unwrap();
-    assert!(response.status().is_success(), "Failed to download diary image");
+    let response = authenticated(
+        client.get(format!("http://localhost:3000{download_url}")),
+        token,
+    )
+    .send()
+    .await
+    .unwrap();
+    assert!(
+        response.status().is_success(),
+        "Failed to download diary image"
+    );
     assert_eq!(
         response.headers().get(CONTENT_TYPE).unwrap(),
         expected_media_type
@@ -505,11 +517,12 @@ async fn assert_download_matches(
     assert_eq!(response.bytes().await.unwrap().as_ref(), expected_body);
 }
 
-fn assert_same_images(
-    actual: &[DiaryImageMetadataDto],
-    expected: &[DiaryImageMetadataDto],
-) {
-    assert_eq!(actual.len(), expected.len(), "unexpected number of diary images");
+fn assert_same_images(actual: &[DiaryImageMetadataDto], expected: &[DiaryImageMetadataDto]) {
+    assert_eq!(
+        actual.len(),
+        expected.len(),
+        "unexpected number of diary images"
+    );
 
     let mut actual_images = actual.to_vec();
     let mut expected_images = expected.to_vec();
@@ -531,8 +544,7 @@ fn assert_same_images(
 
 fn increment_iso8601_second(timestamp: &str) -> String {
     let date_time = chrono::DateTime::parse_from_rfc3339(timestamp).unwrap();
-    (date_time + chrono::Duration::seconds(1))
-        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+    (date_time + chrono::Duration::seconds(1)).to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
 async fn get_diary(

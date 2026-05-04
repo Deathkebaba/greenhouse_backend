@@ -4,8 +4,8 @@ use super::{
 };
 use crate::Pool;
 use chrono::{DateTime, Utc};
-use diesel::prelude::*;
 use diesel::dsl::count_distinct;
+use diesel::prelude::*;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use greenhouse_core::data_storage_service_dto::diary_dtos::{
     get_diary_entry::DiaryEntryResponseDto, image_metadata::DiaryImageMetadataDto,
@@ -177,8 +177,7 @@ impl DiaryEntry {
                     .await?;
 
                 diesel::delete(
-                    diary_entry_tag::table
-                        .filter(diary_entry_tag::diary_entry_id.eq(db_entry.id)),
+                    diary_entry_tag::table.filter(diary_entry_tag::diary_entry_id.eq(db_entry.id)),
                 )
                 .execute(conn)
                 .await?;
@@ -429,18 +428,25 @@ fn build_date_range_query<'a>(
     }
 
     query = match tag_filter_mode {
-        DiaryTagFilterModeDto::Any => query.filter(diary_entry::id.eq_any(
-            diary_entry_tag::table
-                .select(diary_entry_tag::diary_entry_id)
-                .filter(diary_entry_tag::normalized_tag.eq_any(normalized_filters)),
-        )),
-        DiaryTagFilterModeDto::All => query.filter(diary_entry::id.eq_any(
-            diary_entry_tag::table
-                .filter(diary_entry_tag::normalized_tag.eq_any(normalized_filters))
-                .group_by(diary_entry_tag::diary_entry_id)
-                .having(count_distinct(diary_entry_tag::normalized_tag).eq(normalized_filters.len() as i64))
-                .select(diary_entry_tag::diary_entry_id),
-        )),
+        DiaryTagFilterModeDto::Any => query.filter(
+            diary_entry::id.eq_any(
+                diary_entry_tag::table
+                    .select(diary_entry_tag::diary_entry_id)
+                    .filter(diary_entry_tag::normalized_tag.eq_any(normalized_filters)),
+            ),
+        ),
+        DiaryTagFilterModeDto::All => query.filter(
+            diary_entry::id.eq_any(
+                diary_entry_tag::table
+                    .filter(diary_entry_tag::normalized_tag.eq_any(normalized_filters))
+                    .group_by(diary_entry_tag::diary_entry_id)
+                    .having(
+                        count_distinct(diary_entry_tag::normalized_tag)
+                            .eq(normalized_filters.len() as i64),
+                    )
+                    .select(diary_entry_tag::diary_entry_id),
+            ),
+        ),
     };
 
     query
@@ -473,7 +479,10 @@ async fn load_entries_with_related(
 
     let image_rows: Vec<DiaryEntryImageMetadataRecord> = diary_entry_image::table
         .filter(diary_entry_image::diary_entry_id.eq_any(&entry_ids))
-        .order((diary_entry_image::created_at.asc(), diary_entry_image::id.asc()))
+        .order((
+            diary_entry_image::created_at.asc(),
+            diary_entry_image::id.asc(),
+        ))
         .select(diary_image_metadata_columns())
         .load(conn)
         .await
@@ -690,10 +699,8 @@ mod tests {
 
     #[test]
     fn date_range_query_pushes_any_tag_filter_into_sql() {
-        let filters = normalize_requested_filters(&[
-            String::from(" tomatoes "),
-            String::from("HARVEST"),
-        ]);
+        let filters =
+            normalize_requested_filters(&[String::from(" tomatoes "), String::from("HARVEST")]);
         let query = build_date_range_query(
             chrono::Utc::now(),
             chrono::Utc::now(),
@@ -707,7 +714,9 @@ mod tests {
             .to_lowercase();
 
         assert!(sql.contains("from \"diary_entry\""));
-        assert!(sql.contains("select \"diary_entry_tag\".\"diary_entry_id\" from \"diary_entry_tag\""));
+        assert!(
+            sql.contains("select \"diary_entry_tag\".\"diary_entry_id\" from \"diary_entry_tag\"")
+        );
         assert!(sql.contains("\"diary_entry_tag\".\"normalized_tag\" = any($"));
         assert!(!sql.contains("count(distinct"));
     }
@@ -742,7 +751,10 @@ mod tests {
         let entry_id = Uuid::new_v4();
         let query = diary_entry_image::table
             .filter(diary_entry_image::diary_entry_id.eq_any(vec![entry_id]))
-            .order((diary_entry_image::created_at.asc(), diary_entry_image::id.asc()))
+            .order((
+                diary_entry_image::created_at.asc(),
+                diary_entry_image::id.asc(),
+            ))
             .select(diary_image_metadata_columns());
 
         let sql = debug_query::<diesel::pg::Pg, _>(&query).to_string();
@@ -771,7 +783,10 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(created.tags, vec![String::from("Harvest"), String::from("Tomatoes")]);
+        assert_eq!(
+            created.tags,
+            vec![String::from("Harvest"), String::from("Tomatoes")]
+        );
         assert!(created.images.is_empty());
 
         client
@@ -901,14 +916,20 @@ mod tests {
         assert_eq!(missing_upload.status(), StatusCode::NOT_FOUND);
 
         let missing_download = client
-            .get(format!("{}/diary/{entry_id}/images/{image_id}", test_app.base_url))
+            .get(format!(
+                "{}/diary/{entry_id}/images/{image_id}",
+                test_app.base_url
+            ))
             .send()
             .await
             .unwrap();
         assert_eq!(missing_download.status(), StatusCode::NOT_FOUND);
 
         let missing_delete = client
-            .delete(format!("{}/diary/{entry_id}/images/{image_id}", test_app.base_url))
+            .delete(format!(
+                "{}/diary/{entry_id}/images/{image_id}",
+                test_app.base_url
+            ))
             .send()
             .await
             .unwrap();

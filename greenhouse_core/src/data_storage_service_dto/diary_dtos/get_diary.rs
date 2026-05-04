@@ -28,9 +28,7 @@ fn serialize_tags_as_json<S>(tags: &[String], serializer: S) -> Result<S::Ok, S:
 where
     S: Serializer,
 {
-    serializer.serialize_str(
-        &serde_json::to_string(tags).map_err(serde::ser::Error::custom)?,
-    )
+    serializer.serialize_str(&serde_json::to_string(tags).map_err(serde::ser::Error::custom)?)
 }
 
 fn deserialize_tags_from_json<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>

@@ -261,10 +261,12 @@ pub(crate) async fn download_diary_image(
             .get(header::CONTENT_TYPE)
             .and_then(|value| value.to_str().ok())
             .map(str::to_string)
-            .ok_or_else(|| Error::Api(ApiError {
-                status: StatusCode::INTERNAL_SERVER_ERROR,
-                message: String::from("Diary image response is missing content type"),
-            }))?;
+            .ok_or_else(|| {
+                Error::Api(ApiError {
+                    status: StatusCode::INTERNAL_SERVER_ERROR,
+                    message: String::from("Diary image response is missing content type"),
+                })
+            })?;
         let bytes = resp.bytes().await.map_err(|e| {
             sentry::capture_error(&e);
             tracing::error!("Error reading image bytes from service: {:?}", e);
@@ -278,7 +280,11 @@ pub(crate) async fn download_diary_image(
     Err(service_error(resp).await)
 }
 
-pub(crate) async fn delete_diary_image(base_ulr: &str, entry_id: Uuid, image_id: Uuid) -> Result<()> {
+pub(crate) async fn delete_diary_image(
+    base_ulr: &str,
+    entry_id: Uuid,
+    image_id: Uuid,
+) -> Result<()> {
     let entry_id = entry_id.to_string();
     let image_id = image_id.to_string();
     let resp = reqwest::Client::new()
@@ -312,16 +318,20 @@ pub(crate) async fn delete_diary_image(base_ulr: &str, entry_id: Uuid, image_id:
 fn required_header(headers: &HeaderMap, key: &str) -> Result<String> {
     headers
         .get(key)
-        .ok_or_else(|| Error::Api(ApiError {
-            status: StatusCode::BAD_REQUEST,
-            message: format!("Missing required header: {key}"),
-        }))?
+        .ok_or_else(|| {
+            Error::Api(ApiError {
+                status: StatusCode::BAD_REQUEST,
+                message: format!("Missing required header: {key}"),
+            })
+        })?
         .to_str()
         .map(str::to_string)
-        .map_err(|_| Error::Api(ApiError {
-            status: StatusCode::BAD_REQUEST,
-            message: format!("Invalid header value for {key}"),
-        }))
+        .map_err(|_| {
+            Error::Api(ApiError {
+                status: StatusCode::BAD_REQUEST,
+                message: format!("Invalid header value for {key}"),
+            })
+        })
 }
 
 async fn service_error(resp: reqwest::Response) -> Error {
@@ -492,17 +502,26 @@ mod tests {
         headers: HeaderMap,
         body: Bytes,
     ) -> Json<DiaryImageMetadataDto> {
-        state.captured_upload.lock().unwrap().replace(CapturedUpload {
-            entry_id,
-            file_name: headers.get(FILE_NAME_HEADER).unwrap().to_str().unwrap().to_string(),
-            media_type: headers
-                .get(header::CONTENT_TYPE)
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_string(),
-            body: body.to_vec(),
-        });
+        state
+            .captured_upload
+            .lock()
+            .unwrap()
+            .replace(CapturedUpload {
+                entry_id,
+                file_name: headers
+                    .get(FILE_NAME_HEADER)
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+                media_type: headers
+                    .get(header::CONTENT_TYPE)
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+                body: body.to_vec(),
+            });
 
         Json(sample_image())
     }
@@ -562,7 +581,10 @@ mod tests {
 
         let rewritten = with_backend_relative_download_urls(entry);
 
-        assert_eq!(rewritten.images[0].download_url, "/api/diary/entry-1/images/img-1");
+        assert_eq!(
+            rewritten.images[0].download_url,
+            "/api/diary/entry-1/images/img-1"
+        );
     }
 
     #[test]
@@ -582,7 +604,10 @@ mod tests {
 
         let rewritten = with_backend_relative_download_urls_for_list(response);
 
-        assert_eq!(rewritten.entries[0].images[0].download_url, "/api/diary/entry-1/images/img-1");
+        assert_eq!(
+            rewritten.entries[0].images[0].download_url,
+            "/api/diary/entry-1/images/img-1"
+        );
     }
 
     #[tokio::test]
@@ -597,16 +622,13 @@ mod tests {
 
         let response = get_diary(&server.base_url, &query).await.unwrap();
 
-        let captured_query = server
-            .state
-            .captured_query
-            .lock()
-            .unwrap()
-            .clone()
-            .unwrap();
+        let captured_query = server.state.captured_query.lock().unwrap().clone().unwrap();
 
         assert_eq!(captured_query, query);
-        assert_eq!(response.entries[0].images[0].download_url, "/api/diary/entry-1/images/img-1");
+        assert_eq!(
+            response.entries[0].images[0].download_url,
+            "/api/diary/entry-1/images/img-1"
+        );
     }
 
     #[tokio::test]
@@ -617,9 +639,14 @@ mod tests {
         headers.insert(FILE_NAME_HEADER, "leaf.png".parse().unwrap());
         headers.insert(header::CONTENT_TYPE, "image/png".parse().unwrap());
 
-        let metadata = upload_diary_image(&server.base_url, entry_id, &headers, Bytes::from_static(&[1, 2, 3]))
-            .await
-            .unwrap();
+        let metadata = upload_diary_image(
+            &server.base_url,
+            entry_id,
+            &headers,
+            Bytes::from_static(&[1, 2, 3]),
+        )
+        .await
+        .unwrap();
 
         let captured_upload = server
             .state
@@ -638,7 +665,10 @@ mod tests {
                 body: vec![1, 2, 3],
             }
         );
-        assert_eq!(metadata.download_url, "/api/diary/11111111-1111-1111-1111-111111111111/images/img-1");
+        assert_eq!(
+            metadata.download_url,
+            "/api/diary/11111111-1111-1111-1111-111111111111/images/img-1"
+        );
     }
 
     #[tokio::test]

@@ -9,9 +9,12 @@ use axum::{
 use chrono::{DateTime, Utc};
 use greenhouse_core::data_storage_service_dto::diary_dtos::{
     endpoints::{IMAGE_DELETE, IMAGE_DOWNLOAD, IMAGE_UPLOAD},
-    get_diary::GetDiaryEntriesQueryDto, get_diary::GetDiaryResponseDto,
-    get_diary_entry::DiaryEntryResponseDto, image_metadata::DiaryImageMetadataDto,
-    post_diary_entry::PostDiaryEntryDtoRequest, put_diary_entry::PutDiaryEntryDtoRequest,
+    get_diary::GetDiaryEntriesQueryDto,
+    get_diary::GetDiaryResponseDto,
+    get_diary_entry::DiaryEntryResponseDto,
+    image_metadata::DiaryImageMetadataDto,
+    post_diary_entry::PostDiaryEntryDtoRequest,
+    put_diary_entry::PutDiaryEntryDtoRequest,
 };
 use uuid::Uuid;
 
@@ -121,7 +124,9 @@ pub(crate) async fn get_diary(
         sentry::capture_error(&e);
         Error::TimeError
     })?;
-    let entries = DiaryEntry::find_by_date_range(start, end, &query.tags, query.tag_filter_mode, &pool).await?;
+    let entries =
+        DiaryEntry::find_by_date_range(start, end, &query.tags, query.tag_filter_mode, &pool)
+            .await?;
     Ok(GetDiaryResponseDto {
         entries: entries.into_iter().map(|entry| entry.into()).collect(),
     })
@@ -149,7 +154,8 @@ pub(crate) async fn upload_diary_image(
         return Err(Error::InvalidRequest(String::from("Image media type is required")).into());
     }
 
-    let metadata = DiaryEntry::upload_image(entry_id, &file_name, &media_type, body.to_vec(), &pool).await?;
+    let metadata =
+        DiaryEntry::upload_image(entry_id, &file_name, &media_type, body.to_vec(), &pool).await?;
     Ok(Json(metadata))
 }
 
@@ -158,7 +164,8 @@ pub(crate) async fn download_diary_image(
     State(AppState { config: _, pool }): State<AppState>,
     Path((entry_id, image_id)): Path<(Uuid, Uuid)>,
 ) -> HttpResult<axum::response::Response> {
-    let StoredDiaryImage { metadata, bytes } = DiaryEntry::download_image(entry_id, image_id, &pool).await?;
+    let StoredDiaryImage { metadata, bytes } =
+        DiaryEntry::download_image(entry_id, image_id, &pool).await?;
     let mut response = bytes.into_response();
     response.headers_mut().insert(
         header::CONTENT_TYPE,
@@ -168,9 +175,8 @@ pub(crate) async fn download_diary_image(
     );
     response.headers_mut().insert(
         header::CONTENT_LENGTH,
-        header::HeaderValue::from_str(&metadata.byte_size.to_string()).map_err(|_| {
-            Error::InvalidRequest(String::from("Stored image size is invalid"))
-        })?,
+        header::HeaderValue::from_str(&metadata.byte_size.to_string())
+            .map_err(|_| Error::InvalidRequest(String::from("Stored image size is invalid")))?,
     );
     Ok(response)
 }
