@@ -55,7 +55,7 @@ pub(crate) async fn update_diary_entry(
         });
 
         sentry::capture_error(&e);
-        Error::TimeError
+        Error::Time
     })?;
 
     entry.content = update.content.clone();
@@ -79,7 +79,7 @@ pub(crate) async fn create_diary_entry(
             });
 
             sentry::capture_error(&e);
-            Error::TimeError
+            Error::Time
         })?,
         &entry.title,
         &entry.content,
@@ -111,7 +111,7 @@ pub(crate) async fn get_diary(
         });
 
         sentry::capture_error(&e);
-        Error::TimeError
+        Error::Time
     })?;
     let end = query.end.parse::<DateTime<Utc>>().map_err(|e| {
         sentry::configure_scope(|scope| {
@@ -122,7 +122,7 @@ pub(crate) async fn get_diary(
         });
 
         sentry::capture_error(&e);
-        Error::TimeError
+        Error::Time
     })?;
     let entries =
         DiaryEntry::find_by_date_range(start, end, &query.tags, query.tag_filter_mode, &pool)

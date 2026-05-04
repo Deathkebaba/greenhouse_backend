@@ -150,7 +150,10 @@ async fn test_create_update_and_manage_diary_images_with_tags() {
 
     let entry_after_delete = get_entry(&client, &token, &created_entry.id).await;
     assert_eq!(entry_after_delete.images.len(), 1);
-    assert_same_images(&entry_after_delete.images, &[second_image.clone()]);
+    assert_same_images(
+        &entry_after_delete.images,
+        std::slice::from_ref(&second_image),
+    );
 
     let download_after_delete = authenticated(
         client.get(format!("http://localhost:3000{}", first_image.download_url)),

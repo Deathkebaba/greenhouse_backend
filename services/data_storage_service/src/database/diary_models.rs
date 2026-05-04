@@ -163,10 +163,7 @@ impl DiaryEntry {
         let db_entry = DiaryEntryRecord::from(&*self);
         let tag_rows = build_tag_rows(self.id, &self.tags);
 
-        conn.transaction::<(), diesel::result::Error, _>(|conn| {
-            let db_entry = db_entry.clone();
-            let tag_rows = tag_rows.clone();
-
+        conn.transaction::<(), diesel::result::Error, _>(move |conn| {
             Box::pin(async move {
                 diesel::insert_into(diary_entry::table)
                     .values(&db_entry)
