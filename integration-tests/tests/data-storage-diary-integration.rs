@@ -207,4 +207,3 @@ async fn get_diary(
     );
     response.json::<GetDiaryResponseDto>().await.unwrap()
 }
-
