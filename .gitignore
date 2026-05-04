@@ -4,3 +4,8 @@
 **/config.json
 Cargo.lock
 logs
+
+# Deathkebab was here
+management/
+.github/agents/
+.github/instructions/
