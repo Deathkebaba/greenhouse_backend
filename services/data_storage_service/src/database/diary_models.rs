@@ -3,7 +3,7 @@ use super::{
     schema::{diary_entry, diary_entry_image, diary_entry_tag},
 };
 use crate::Pool;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, SecondsFormat, Utc};
 use diesel::dsl::count_distinct;
 use diesel::prelude::*;
 use diesel_async::{AsyncConnection, RunQueryDsl};
@@ -323,7 +323,7 @@ impl DiaryEntryImageRecord {
             file_name: self.file_name.clone(),
             media_type: self.media_type.clone(),
             byte_size: self.byte_size,
-            uploaded_at: self.created_at.format("%Y-%m-%dT%H:%M:%S%.fZ").to_string(),
+            uploaded_at: format_metadata_timestamp(self.created_at),
             download_url: String::new(),
         }
     }
@@ -336,10 +336,14 @@ impl DiaryEntryImageMetadataRecord {
             file_name: self.file_name.clone(),
             media_type: self.media_type.clone(),
             byte_size: self.byte_size,
-            uploaded_at: self.created_at.format("%Y-%m-%dT%H:%M:%S%.fZ").to_string(),
+            uploaded_at: format_metadata_timestamp(self.created_at),
             download_url: String::new(),
         }
     }
+}
+
+fn format_metadata_timestamp(timestamp: DateTime<Utc>) -> String {
+    timestamp.to_rfc3339_opts(SecondsFormat::Micros, true)
 }
 
 fn diary_image_metadata_columns() -> (
@@ -735,5 +739,17 @@ mod tests {
 
         assert!(sql.contains("storage_key"));
         assert!(!sql.contains("image_data"));
+    }
+
+    #[test]
+    fn image_metadata_timestamps_use_microsecond_precision() {
+        let timestamp = DateTime::parse_from_rfc3339("2026-05-04T13:56:38.708382133Z")
+            .unwrap()
+            .with_timezone(&Utc);
+
+        assert_eq!(
+            format_metadata_timestamp(timestamp),
+            String::from("2026-05-04T13:56:38.708382Z")
+        );
     }
 }
