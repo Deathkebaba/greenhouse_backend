@@ -24,8 +24,8 @@ async fn persists_tags_filters_entries_and_round_trips_images() {
     context.start_all_services().await;
     let client = reqwest::Client::new();
 
-    let created = client
-        .post(format!("{DATA_STORAGE_BASE_URL}/"))
+    let created_response = client
+        .post(DATA_STORAGE_BASE_URL)
         .json(&serde_json::json!({
             "date": "2026-05-03T10:00:00Z",
             "title": "Tomatoes",
@@ -34,10 +34,14 @@ async fn persists_tags_filters_entries_and_round_trips_images() {
         }))
         .send()
         .await
-        .unwrap()
-        .json::<DiaryEntryResponseDto>()
-        .await
         .unwrap();
+    let created_status = created_response.status();
+    let created_body = created_response.text().await.unwrap();
+    assert!(
+        created_status.is_success(),
+        "Failed to create diary entry: status={created_status}, body={created_body}"
+    );
+    let created = serde_json::from_str::<DiaryEntryResponseDto>(&created_body).unwrap();
 
     assert_eq!(
         created.tags,
@@ -46,7 +50,7 @@ async fn persists_tags_filters_entries_and_round_trips_images() {
     assert!(created.images.is_empty());
 
     client
-        .post(format!("{DATA_STORAGE_BASE_URL}/"))
+        .post(DATA_STORAGE_BASE_URL)
         .json(&serde_json::json!({
             "date": "2026-05-03T11:00:00Z",
             "title": "Cucumbers",
@@ -191,7 +195,7 @@ async fn get_diary(
     query: &GetDiaryEntriesQueryDto,
 ) -> GetDiaryResponseDto {
     let response = client
-        .get(format!("{DATA_STORAGE_BASE_URL}/"))
+        .get(DATA_STORAGE_BASE_URL)
         .query(query)
         .send()
         .await
@@ -203,3 +207,4 @@ async fn get_diary(
     );
     response.json::<GetDiaryResponseDto>().await.unwrap()
 }
+
