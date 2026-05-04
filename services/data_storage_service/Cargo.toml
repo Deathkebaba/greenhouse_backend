@@ -32,8 +32,3 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tower-http = { workspace = true, features = ["trace"] }
 sentry = { workspace = true, features = ["debug-images", "tower"] }
-
-[dev-dependencies]
-reqwest = { version = "0.12.15", features = ["json"] }
-testcontainers = "0.24"
-testcontainers-modules = { version = "0.12.0", features = ["postgres", "blocking"] }
